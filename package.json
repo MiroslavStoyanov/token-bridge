@@ -1,0 +1,12 @@
+{
+  "name": "token-bridge",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "eslint": "^9.19.0",
+    "prettier": "^3.4.2"
+  },
+  "private": true,
+  "workspaces": ["backend", "contracts/ethereum", "contracts/bsc"]
+}
