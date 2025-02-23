@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  LoggerService,
+  OnModuleInit,
+  Inject,
+} from '@nestjs/common';
 import {
   Contract,
   Wallet,
@@ -7,6 +12,7 @@ import {
   ContractTransactionResponse,
   BaseContract,
 } from 'ethers';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -26,7 +32,9 @@ export class BlockchainListenerService implements OnModuleInit {
   private bscBridge!: BaseContract;
   private wallet: Wallet;
 
-  constructor() {
+  constructor(
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: LoggerService,
+  ) {
     const ethereumRpcUrl: string | undefined = process.env.SEPOLIA_RPC_URL;
     const bscRpcUrl: string | undefined = process.env.BSC_TESTNET_RPC_URL;
     const privateKey: string | undefined = process.env.PRIVATE_KEY;
@@ -61,7 +69,7 @@ export class BlockchainListenerService implements OnModuleInit {
   }
 
   onModuleInit(): void {
-    console.log('Listening for blockchain events...');
+    this.logger.log('Listening for blockchain events...');
 
     this.ethereumBridge.on(
       'Locked',
@@ -71,12 +79,12 @@ export class BlockchainListenerService implements OnModuleInit {
         targetChain: string,
         recipient: string,
       ) => {
-        console.log(
+        this.logger.log(
           `Ethereum → BSC: ${amount.toString()} tokens locked by ${sender}`,
         );
         if (targetChain === 'BSC') {
           void this.releaseTokensOnBSC(recipient, amount).catch((error) => {
-            console.error('Error in releaseTokensOnBSC:', error);
+            this.logger.error('Error in releaseTokensOnBSC:', error);
           });
         }
       },
@@ -90,13 +98,13 @@ export class BlockchainListenerService implements OnModuleInit {
         targetChain: string,
         recipient: string,
       ) => {
-        console.log(
+        this.logger.log(
           `BSC → Ethereum: ${amount.toString()} tokens locked by ${sender}`,
         );
         if (targetChain === 'Ethereum') {
           void this.releaseTokensOnEthereum(recipient, amount).catch(
             (error) => {
-              console.error('Error in releaseTokensOnEthereum:', error);
+              this.logger.error('Error in releaseTokensOnEthereum:', error);
             },
           );
         }
@@ -121,11 +129,11 @@ export class BlockchainListenerService implements OnModuleInit {
       );
       await tx.wait();
 
-      console.log(
+      this.logger.log(
         `Released ${amount.toString()} tokens to ${recipient} on BSC`,
       );
     } catch (error: unknown) {
-      console.error(
+      this.logger.error(
         'Error releasing tokens on BSC:',
         this.getErrorMessage(error),
       );
@@ -149,11 +157,11 @@ export class BlockchainListenerService implements OnModuleInit {
       );
 
       await tx.wait();
-      console.log(
+      this.logger.log(
         `Released ${amount.toString()} tokens to ${recipient} on Ethereum`,
       );
     } catch (error: unknown) {
-      console.error(
+      this.logger.error(
         'Error releasing tokens on Ethereum:',
         this.getErrorMessage(error),
       );
@@ -163,6 +171,14 @@ export class BlockchainListenerService implements OnModuleInit {
   private getErrorMessage(error: unknown): string {
     if (error instanceof Error) {
       return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    if (error && typeof error === 'object' && 'message' in error) {
+      return (
+        (error as { message?: string }).message || 'An unknown error occurred'
+      );
     }
     return 'An unknown error occurred';
   }
