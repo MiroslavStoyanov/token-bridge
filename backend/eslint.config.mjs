@@ -31,7 +31,8 @@ export default tseslint.config(
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslnt/no-unsafe-call': 'off',
-      "@typescript-eslint/restrict-template-expressions": "off"
+      "@typescript-eslint/restrict-template-expressions": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off"
     },
   },
 );

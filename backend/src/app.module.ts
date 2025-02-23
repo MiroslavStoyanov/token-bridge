@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import { BlockchainListenerService } from './services/blockchain-listener.service';
+import { BullModule } from '@nestjs/bull';
+import { TransactionQueueProcessor } from './queue/transaction-queue.processor';
 
 @Module({
   imports: [
@@ -26,8 +28,17 @@ import { BlockchainListenerService } from './services/blockchain-listener.servic
         }),
       ],
     }),
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST ?? '127.0.0.1',
+        port: Number(process.env.REDIS_PORT) || 6379,
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'transaction-queue',
+    }),
   ],
-  providers: [BlockchainListenerService],
-  exports: [WinstonModule],
+  providers: [BlockchainListenerService, TransactionQueueProcessor],
+  exports: [WinstonModule, BullModule],
 })
 export class AppModule {}

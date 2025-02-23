@@ -14,6 +14,9 @@ import {
 } from 'ethers';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import * as dotenv from 'dotenv';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { TRANSACTION_QUEUE_NAME } from 'src/constants/queue';
 
 dotenv.config();
 
@@ -34,6 +37,8 @@ export class BlockchainListenerService implements OnModuleInit {
 
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: LoggerService,
+    @InjectQueue(TRANSACTION_QUEUE_NAME)
+    private readonly transactionQueue: Queue,
   ) {
     const ethereumRpcUrl: string | undefined = process.env.SEPOLIA_RPC_URL;
     const bscRpcUrl: string | undefined = process.env.BSC_TESTNET_RPC_URL;
@@ -112,7 +117,7 @@ export class BlockchainListenerService implements OnModuleInit {
     );
   }
 
-  private async releaseTokensOnBSC(
+  public async releaseTokensOnBSC(
     recipient: string,
     amount: bigint,
   ): Promise<void> {
@@ -122,7 +127,6 @@ export class BlockchainListenerService implements OnModuleInit {
         signer,
       ) as unknown as BridgeContract;
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const tx: ContractTransactionResponse = await contract.releaseTokens(
         recipient,
         amount,
@@ -133,14 +137,18 @@ export class BlockchainListenerService implements OnModuleInit {
         `Released ${amount.toString()} tokens to ${recipient} on BSC`,
       );
     } catch (error: unknown) {
-      this.logger.error(
-        'Error releasing tokens on BSC:',
-        this.getErrorMessage(error),
+      const errorMessage = this.getErrorMessage(error);
+      this.logger.error(`Transaction failed. Retrying: ${errorMessage}`);
+
+      await this.transactionQueue.add(
+        'retry-transaction',
+        { recipient, amount, chain: 'BSC' },
+        { attempts: 5, backoff: 10000 },
       );
     }
   }
 
-  private async releaseTokensOnEthereum(
+  public async releaseTokensOnEthereum(
     recipient: string,
     amount: bigint,
   ): Promise<void> {
@@ -161,9 +169,13 @@ export class BlockchainListenerService implements OnModuleInit {
         `Released ${amount.toString()} tokens to ${recipient} on Ethereum`,
       );
     } catch (error: unknown) {
-      this.logger.error(
-        'Error releasing tokens on Ethereum:',
-        this.getErrorMessage(error),
+      const errorMessage = this.getErrorMessage(error);
+      this.logger.error(`Transaction failed. Retrying: ${errorMessage}`);
+
+      await this.transactionQueue.add(
+        'retry-transaction',
+        { recipient, amount, chain: 'Ethereum' },
+        { attempts: 5, backoff: 10000 },
       );
     }
   }

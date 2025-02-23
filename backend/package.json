@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs/bull": "^11.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/microservices": "^11.0.10",
@@ -27,10 +28,12 @@
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.0.10",
     "axios": "^1.7.9",
+    "bull": "^4.16.5",
     "dotenv": "^16.4.7",
     "ethers": "^6.13.5",
     "nest-winston": "^1.10.2",
     "pg": "^8.13.1",
+    "redis": "^4.7.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.20",
