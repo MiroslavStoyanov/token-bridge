@@ -70,7 +70,6 @@ This starts the backend with **PostgreSQL & Redis**.
 | GET | `/transactions/:id` | Fetch a specific transaction |
 | POST | `/transactions/retried` | Get all retried transactions |
 
-
 ---
 
 ## Queue System (BullMQ)
