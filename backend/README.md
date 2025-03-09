@@ -68,23 +68,13 @@ This starts the backend with **PostgreSQL & Redis**.
 |--------|---------|-------------|
 | GET | `/transactions` | Fetch all transactions |
 | GET | `/transactions/:id` | Fetch a specific transaction |
-| POST | `/transactions/retry/:id` | Manually retry a failed transaction |
+| POST | `/transactions/retried` | Get all retried transactions |
 
 
 ---
 
 ## Queue System (BullMQ)
 The backend uses **BullMQ (Redis-based queueing)** for failed transaction retries.
-
-### View Active Jobs
-```sh
-GET /admin/queues
-```
-
-### Manually Retry a Transaction
-```sh
-POST /transactions/retry/:id
-```
 
 ---
 
